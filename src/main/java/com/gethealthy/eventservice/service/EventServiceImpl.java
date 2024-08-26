@@ -1,8 +1,10 @@
 package com.gethealthy.eventservice.service;
 
 import com.gethealthy.eventservice.exception.EventNotFoundException;
+import com.gethealthy.eventservice.model.DeleteRequest;
 import com.gethealthy.eventservice.model.Event;
 import com.gethealthy.eventservice.model.EventDTO;
+import com.gethealthy.eventservice.model.SearchRequest;
 import com.gethealthy.eventservice.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -30,7 +32,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventDTO> getEventsByRecordID(Long recordID) {
+    public List<EventDTO> getEventsByRecordID(Long recordID) throws EventNotFoundException {
         List<EventDTO> eventDTOList = new ArrayList<>();
         try {
             eventRepository.findAllByRecordID(recordID)
@@ -45,6 +47,73 @@ public class EventServiceImpl implements EventService {
             throw new RuntimeException(eventNotFoundException);
         }catch(Exception e){
             logger.info("Error while getting events associated with recordID: {}", recordID);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<EventDTO> searchEvents(SearchRequest searchRequest) throws EventNotFoundException {
+        List<EventDTO> eventDTOList = new ArrayList<>();
+        try{
+            eventRepository.searchEvents(searchRequest.getTerm(), searchRequest.getUserID())
+                    .orElseThrow(
+                            () -> new EventNotFoundException(searchRequest.getTerm(), searchRequest.getUserID())
+                    )
+                    .forEach(eventDTO -> eventDTOList.add(mapperService.toDTO(eventDTO)));
+            return eventDTOList;
+        }catch (EventNotFoundException eventNotFoundException){
+            logger.info("No event found associated with term: {} and matching the userID: {}", searchRequest.getTerm(), searchRequest.getUserID());
+            throw new RuntimeException(eventNotFoundException);
+        }catch(Exception e){
+            logger.info("Error while getting records associated with term: {} and userID: {}", searchRequest.getTerm(), searchRequest.getUserID());
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public EventDTO getEvent(Long id) throws EventNotFoundException {
+        try {
+        return mapperService.toDTO(eventRepository.findById(id).orElseThrow(
+                () -> new EventNotFoundException(id)
+        ));
+
+        }catch (EventNotFoundException eventNotFoundException){
+            logger.info("No event found associated with id: {}", id);
+            throw new RuntimeException(eventNotFoundException);
+        }catch(Exception e){
+            logger.info("Error while getting event associated with id: {}", id);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public EventDTO updateEvent(EventDTO eventDTO) throws EventNotFoundException {
+        try {
+            var event = eventRepository.findById(eventDTO.getId()).orElseThrow(
+                    () -> new EventNotFoundException(eventDTO.getId())
+            );
+
+            mapperService.updateEntity(eventDTO, event);
+            return mapperService.toDTO(eventRepository.save(event));
+        }catch (EventNotFoundException eventNotFoundException){
+            logger.info("No event found associated with id: {} while updating the event", eventDTO.getId());
+            throw new RuntimeException(eventNotFoundException);
+        }catch(Exception e){
+            logger.info("Error while updating event associated with id: {}", eventDTO.getId());
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Boolean deleteEvent(DeleteRequest deleteRequest) throws EventNotFoundException {
+        try{
+            eventRepository.findByIdAndUserID(deleteRequest.getEventId(), deleteRequest.getUserID());
+            return Boolean.TRUE;
+        }catch (EventNotFoundException eventNotFoundException){
+            logger.info("No event found associated with id: {} and userID: {}", deleteRequest.getEventId(), deleteRequest.getUserID());
+            throw new RuntimeException(eventNotFoundException);
+        }catch(Exception e){
+            logger.info("Error while deleting event associated with id: {} and userID: {}", deleteRequest.getEventId(), deleteRequest.getUserID());
             throw new RuntimeException(e);
         }
     }

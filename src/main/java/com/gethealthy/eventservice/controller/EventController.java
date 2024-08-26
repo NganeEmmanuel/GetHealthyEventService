@@ -1,5 +1,6 @@
 package com.gethealthy.eventservice.controller;
 
+import com.gethealthy.eventservice.model.DeleteRequest;
 import com.gethealthy.eventservice.model.EventDTO;
 import com.gethealthy.eventservice.model.SearchRequest;
 import com.gethealthy.eventservice.service.EventService;
@@ -26,8 +27,23 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEventsByRecordID(recordID));
     }
 
-    @GetMapping("/search")
+    @PostMapping("/search")
     public ResponseEntity<List<EventDTO>> searchEvents(@RequestBody SearchRequest searchRequest) {
         return ResponseEntity.ok(eventService.searchEvents(searchRequest));
+    }
+
+    @GetMapping("/event/{id}")
+    public ResponseEntity<EventDTO> getEvent(@PathVariable Long id) {
+        return ResponseEntity.ok(eventService.getEvent(id));
+    }
+
+    @PutMapping("update")
+    public ResponseEntity<EventDTO> updateEvent(@RequestBody EventDTO eventDTO) {
+        return ResponseEntity.ok(eventService.updateEvent(eventDTO));
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<Boolean> deleteEvent(@RequestBody DeleteRequest deleteRequest) {
+        return ResponseEntity.ok(eventService.deleteEvent(deleteRequest));
     }
 }

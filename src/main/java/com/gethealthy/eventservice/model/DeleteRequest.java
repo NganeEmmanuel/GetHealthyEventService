@@ -5,17 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class EventDTO {
-    private Long id;
-    private Long recordID;
+public class DeleteRequest {
+    private Long eventId;
     private Long userID;
-    private String title;
-    private String description;
-    private String location;
-    private String startDate;
 }
