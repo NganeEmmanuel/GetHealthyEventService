@@ -1,5 +1,6 @@
 package com.gethealthy.eventservice.service;
 
+import com.gethealthy.eventservice.exception.EventNotFoundException;
 import com.gethealthy.eventservice.model.Event;
 import com.gethealthy.eventservice.model.EventDTO;
 import com.gethealthy.eventservice.repository.EventRepository;
@@ -8,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -29,6 +31,21 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventDTO> getEventsByRecordID(Long recordID) {
-        return List.of();
+        List<EventDTO> eventDTOList = new ArrayList<>();
+        try {
+            eventRepository.findAllByRecordID(recordID)
+                    .orElseThrow(
+                            () -> new EventNotFoundException(recordID)
+                    )
+                    .forEach(eventDTO -> eventDTOList.add(mapperService.toDTO(eventDTO)));
+
+            return eventDTOList;
+        }catch (EventNotFoundException eventNotFoundException){
+            logger.info("No event found associated with recordID: {}", recordID);
+            throw new RuntimeException(eventNotFoundException);
+        }catch(Exception e){
+            logger.info("Error while getting events associated with recordID: {}", recordID);
+            throw new RuntimeException(e);
+        }
     }
 }

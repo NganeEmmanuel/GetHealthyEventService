@@ -1,6 +1,7 @@
 package com.gethealthy.eventservice.controller;
 
 import com.gethealthy.eventservice.model.EventDTO;
+import com.gethealthy.eventservice.model.SearchRequest;
 import com.gethealthy.eventservice.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,5 +24,10 @@ public class EventController {
     @GetMapping("/events")
     public ResponseEntity<List<EventDTO>> getEventsByRecordID(@RequestParam Long recordID) {
         return ResponseEntity.ok(eventService.getEventsByRecordID(recordID));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<EventDTO>> searchEvents(@RequestBody SearchRequest searchRequest) {
+        return ResponseEntity.ok(eventService.searchEvents(searchRequest));
     }
 }
