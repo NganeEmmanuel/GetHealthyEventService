@@ -31,5 +31,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Optional<List<Event>> searchEvents(@Param("term") String term, @Param("userID") Long userID);
 
 
-    void findByIdAndUserID(Long eventId, Long userID);
+    Optional<Event> findByIdAndUserID(Long eventId, Long userID);
+
+    void deleteByIdAndUserID(Long eventID, Long userID);
+
+    void deleteAllByRecordIDAndUserID(Long recordID, Long userID);
 }

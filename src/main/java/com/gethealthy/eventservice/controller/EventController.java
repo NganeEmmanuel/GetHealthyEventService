@@ -1,8 +1,6 @@
 package com.gethealthy.eventservice.controller;
 
-import com.gethealthy.eventservice.model.DeleteRequest;
-import com.gethealthy.eventservice.model.EventDTO;
-import com.gethealthy.eventservice.model.SearchRequest;
+import com.gethealthy.eventservice.model.*;
 import com.gethealthy.eventservice.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -45,5 +43,15 @@ public class EventController {
     @DeleteMapping("/delete")
     public ResponseEntity<Boolean> deleteEvent(@RequestBody DeleteRequest deleteRequest) {
         return ResponseEntity.ok(eventService.deleteEvent(deleteRequest));
+    }
+
+    @DeleteMapping("/delete/all")
+    public ResponseEntity<Boolean> deleteAllEvents(@RequestBody EventsDeleteRequest eventsDeleteRequest) {
+        return ResponseEntity.ok(eventService.deleteAllEvent(eventsDeleteRequest));
+    }
+
+    @DeleteMapping("/delete/all/record")
+    public ResponseEntity<Boolean> deleteAllEventsByRecordID(@RequestBody RecordEventsDeleteRequest deleteRequest) {
+        return ResponseEntity.ok(eventService.deleteAllEventsByRecordID(deleteRequest));
     }
 }

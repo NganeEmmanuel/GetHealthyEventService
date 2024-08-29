@@ -5,11 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class DeleteRequest {
-    private Long eventID;
+public class EventsDeleteRequest {
+    private List<Long> eventIDList;
     private Long userID;
 }

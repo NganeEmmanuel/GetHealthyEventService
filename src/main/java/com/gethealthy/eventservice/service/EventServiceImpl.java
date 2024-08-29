@@ -1,10 +1,7 @@
 package com.gethealthy.eventservice.service;
 
 import com.gethealthy.eventservice.exception.EventNotFoundException;
-import com.gethealthy.eventservice.model.DeleteRequest;
-import com.gethealthy.eventservice.model.Event;
-import com.gethealthy.eventservice.model.EventDTO;
-import com.gethealthy.eventservice.model.SearchRequest;
+import com.gethealthy.eventservice.model.*;
 import com.gethealthy.eventservice.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -107,13 +104,42 @@ public class EventServiceImpl implements EventService {
     @Override
     public Boolean deleteEvent(DeleteRequest deleteRequest) throws EventNotFoundException {
         try{
-            eventRepository.findByIdAndUserID(deleteRequest.getEventId(), deleteRequest.getUserID());
+            eventRepository.delete(
+                    eventRepository.findByIdAndUserID(deleteRequest.getEventID(), deleteRequest.getUserID())
+                            .orElseThrow(
+                                    () -> new EventNotFoundException(deleteRequest.getEventID())
+                            )
+            );
             return Boolean.TRUE;
         }catch (EventNotFoundException eventNotFoundException){
-            logger.info("No event found associated with id: {} and userID: {}", deleteRequest.getEventId(), deleteRequest.getUserID());
+            logger.info("No event found associated with id: {} and userID: {}", deleteRequest.getEventID(), deleteRequest.getUserID());
             throw new RuntimeException(eventNotFoundException);
         }catch(Exception e){
-            logger.info("Error while deleting event associated with id: {} and userID: {}", deleteRequest.getEventId(), deleteRequest.getUserID());
+            logger.info("Error while deleting event associated with id: {} and userID: {}", deleteRequest.getEventID(), deleteRequest.getUserID());
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Boolean deleteAllEvent(EventsDeleteRequest eventsDeleteRequest){
+        try{
+            eventsDeleteRequest.getEventIDList().forEach(
+                    eventID -> eventRepository.deleteByIdAndUserID(eventID, eventsDeleteRequest.getUserID())
+            );
+            return Boolean.TRUE;
+        }catch(Exception e){
+            logger.info("Error while deleting events associated with ids: {} and userID: {}", eventsDeleteRequest.getEventIDList(), eventsDeleteRequest.getUserID());
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Boolean deleteAllEventsByRecordID(RecordEventsDeleteRequest deleteRequest){
+        try{
+            eventRepository.deleteAllByRecordIDAndUserID(deleteRequest.getRecordID(), deleteRequest.getUserID());
+            return Boolean.TRUE;
+        }catch(Exception e){
+            logger.info("Error while deleting events associated with recordID: {} and userID: {}", deleteRequest.getRecordID(), deleteRequest.getUserID());
             throw new RuntimeException(e);
         }
     }

@@ -1,9 +1,7 @@
 package com.gethealthy.eventservice.service;
 
 import com.gethealthy.eventservice.exception.EventNotFoundException;
-import com.gethealthy.eventservice.model.DeleteRequest;
-import com.gethealthy.eventservice.model.EventDTO;
-import com.gethealthy.eventservice.model.SearchRequest;
+import com.gethealthy.eventservice.model.*;
 
 import java.util.List;
 
@@ -52,11 +50,27 @@ public interface EventService {
     EventDTO updateEvent(EventDTO eventDTO) throws EventNotFoundException;
 
     /**
-     * Deletes and event from the database records
+     * Deletes an event from the database records
      *
      * @param deleteRequest the object containing the eventID and the userID
      * @return true if deleted and false if not
      * @throws EventNotFoundException if no event record is found associated with the eventID and userID
      */
     Boolean deleteEvent(DeleteRequest deleteRequest) throws EventNotFoundException;
+
+    /**
+     * Deletes all events whose id are provided in the deleteRequest from the database records
+     *
+     * @param eventsDeleteRequest the object containing the list of eventID and the userID
+     * @return true if deleted all and false if not
+     */
+    Boolean deleteAllEvent(EventsDeleteRequest eventsDeleteRequest);
+
+    /**
+     * Deletes all event from the database records associated with a illnessRecordID and userID
+     *
+     * @param deleteRequest the object containing the recordID and the userID
+     * @return true if deleted and false if not
+     */
+    Boolean deleteAllEventsByRecordID(RecordEventsDeleteRequest deleteRequest);
 }

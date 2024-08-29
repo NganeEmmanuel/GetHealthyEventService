@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class DeleteRequest {
-    private Long eventID;
+public class RecordEventsDeleteRequest {
+    private Long recordID;
     private Long userID;
 }
