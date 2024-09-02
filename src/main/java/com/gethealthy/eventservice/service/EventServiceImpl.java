@@ -1,11 +1,14 @@
 package com.gethealthy.eventservice.service;
 
 import com.gethealthy.eventservice.exception.EventNotFoundException;
+import com.gethealthy.eventservice.feign.AuthenticationInterface;
 import com.gethealthy.eventservice.model.*;
 import com.gethealthy.eventservice.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,32 +19,42 @@ import java.util.List;
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final MapperService<EventDTO, Event> mapperService;
+    private final AuthenticationInterface authenticationInterface;
     private static final Logger logger = LoggerFactory.getLogger(EventServiceImpl.class);
 
     @Override
-    public EventDTO addEvent(EventDTO eventDTO) {
+    public ResponseEntity<EventDTO> addEvent(EventDTO eventDTO, String authorizationHeader) {
         try{
-            return mapperService.toDTO(eventRepository.save(mapperService.toEntity(eventDTO)));
+            eventDTO.setUserID(authenticationInterface.getLoggedInUserId(authorizationHeader).getBody());
+            return ResponseEntity.ok(
+                    mapperService
+                            .toDTO(eventRepository
+                                    .save(mapperService
+                                            .toEntity(eventDTO)
+                                    )
+                            )
+            );
         }catch(Exception e){
-            logger.info("Error while adding event with data: {}", eventDTO);
+            logger.info("Error while adding event with data: {} and associated with user from header: {}", eventDTO, authorizationHeader);
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public List<EventDTO> getEventsByRecordID(Long recordID) throws EventNotFoundException {
+    public ResponseEntity<List<EventDTO>> getEventsByRecordID(Long recordID, String authorizationHeader) throws EventNotFoundException {
         List<EventDTO> eventDTOList = new ArrayList<>();
         try {
-            eventRepository.findAllByRecordID(recordID)
+            var userID = authenticationInterface.getLoggedInUserId(authorizationHeader).getBody();
+            eventRepository.findAllByRecordIDAndUserID(recordID, userID)
                     .orElseThrow(
                             () -> new EventNotFoundException(recordID)
                     )
                     .forEach(eventDTO -> eventDTOList.add(mapperService.toDTO(eventDTO)));
 
-            return eventDTOList;
+            return ResponseEntity.ok(eventDTOList);
         }catch (EventNotFoundException eventNotFoundException){
             logger.info("No event found associated with recordID: {}", recordID);
-            throw new RuntimeException(eventNotFoundException);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }catch(Exception e){
             logger.info("Error while getting events associated with recordID: {}", recordID);
             throw new RuntimeException(e);
@@ -49,34 +62,42 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventDTO> searchEvents(SearchRequest searchRequest) throws EventNotFoundException {
+    public ResponseEntity<List<EventDTO>> searchEvents(String term, String authorizationHeader) throws EventNotFoundException {
         List<EventDTO> eventDTOList = new ArrayList<>();
         try{
-            eventRepository.searchEvents(searchRequest.getTerm(), searchRequest.getUserID())
+            var userID = authenticationInterface.getLoggedInUserId(authorizationHeader).getBody();
+            eventRepository.searchEvents(term, userID)
                     .orElseThrow(
-                            () -> new EventNotFoundException(searchRequest.getTerm(), searchRequest.getUserID())
+                            () -> new EventNotFoundException(term, userID)
                     )
                     .forEach(eventDTO -> eventDTOList.add(mapperService.toDTO(eventDTO)));
-            return eventDTOList;
+            return ResponseEntity.ok(eventDTOList);
         }catch (EventNotFoundException eventNotFoundException){
-            logger.info("No event found associated with term: {} and matching the userID: {}", searchRequest.getTerm(), searchRequest.getUserID());
-            throw new RuntimeException(eventNotFoundException);
+            logger.info("No event found matching term: {} and associated with user from header: {}", term, authorizationHeader);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }catch(Exception e){
-            logger.info("Error while getting records associated with term: {} and userID: {}", searchRequest.getTerm(), searchRequest.getUserID());
+            logger.info("Error while getting records matching term: {} and associated with user from header: {}", term, authorizationHeader);
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public EventDTO getEvent(Long id) throws EventNotFoundException {
+    public ResponseEntity<EventDTO> getEvent(Long id, String authorizationHeader) throws EventNotFoundException {
         try {
-        return mapperService.toDTO(eventRepository.findById(id).orElseThrow(
-                () -> new EventNotFoundException(id)
-        ));
+            var userID = authenticationInterface.getLoggedInUserId(authorizationHeader).getBody();
+            return ResponseEntity.ok(
+                mapperService
+                        .toDTO(eventRepository
+                                .findByIdAndUserID(id, userID)
+                                .orElseThrow(
+                                    () -> new EventNotFoundException(id, userID)
+                                )
+                        )
+            );
 
         }catch (EventNotFoundException eventNotFoundException){
             logger.info("No event found associated with id: {}", id);
-            throw new RuntimeException(eventNotFoundException);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }catch(Exception e){
             logger.info("Error while getting event associated with id: {}", id);
             throw new RuntimeException(e);
@@ -84,17 +105,19 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventDTO updateEvent(EventDTO eventDTO) throws EventNotFoundException {
+    public ResponseEntity<EventDTO> updateEvent(EventDTO eventDTO, String authorizationHeader) throws EventNotFoundException {
         try {
+            var userID = authenticationInterface.getLoggedInUserId(authorizationHeader).getBody();
+            if(!eventDTO.getUserID().equals(userID)) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             var event = eventRepository.findById(eventDTO.getId()).orElseThrow(
                     () -> new EventNotFoundException(eventDTO.getId())
             );
 
             mapperService.updateEntity(eventDTO, event);
-            return mapperService.toDTO(eventRepository.save(event));
+            return ResponseEntity.ok(mapperService.toDTO(eventRepository.save(event)));
         }catch (EventNotFoundException eventNotFoundException){
             logger.info("No event found associated with id: {} while updating the event", eventDTO.getId());
-            throw new RuntimeException(eventNotFoundException);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }catch(Exception e){
             logger.info("Error while updating event associated with id: {}", eventDTO.getId());
             throw new RuntimeException(e);
@@ -102,44 +125,47 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public Boolean deleteEvent(DeleteRequest deleteRequest) throws EventNotFoundException {
+    public ResponseEntity<Boolean> deleteEvent(Long id, String authorizationHeader) throws EventNotFoundException {
         try{
+            var userID = authenticationInterface.getLoggedInUserId(authorizationHeader).getBody();
             eventRepository.delete(
-                    eventRepository.findByIdAndUserID(deleteRequest.getEventID(), deleteRequest.getUserID())
+                    eventRepository.findByIdAndUserID(id, userID)
                             .orElseThrow(
-                                    () -> new EventNotFoundException(deleteRequest.getEventID())
+                                    () -> new EventNotFoundException(id, userID)
                             )
             );
-            return Boolean.TRUE;
+            return ResponseEntity.ok(Boolean.TRUE);
         }catch (EventNotFoundException eventNotFoundException){
-            logger.info("No event found associated with id: {} and userID: {}", deleteRequest.getEventID(), deleteRequest.getUserID());
-            throw new RuntimeException(eventNotFoundException);
+            logger.info("No event found with id: {} and associated with user from header: {}", id, authorizationHeader);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }catch(Exception e){
-            logger.info("Error while deleting event associated with id: {} and userID: {}", deleteRequest.getEventID(), deleteRequest.getUserID());
+            logger.info("Error while deleting event with id: {} and associated with user from header: {}", id, authorizationHeader);
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public Boolean deleteAllEvent(EventsDeleteRequest eventsDeleteRequest){
+    public ResponseEntity<Boolean> deleteAllEvent(List<Long> ids, String authorizationHeader){
         try{
-            eventsDeleteRequest.getEventIDList().forEach(
-                    eventID -> eventRepository.deleteByIdAndUserID(eventID, eventsDeleteRequest.getUserID())
+            var userID = authenticationInterface.getLoggedInUserId(authorizationHeader).getBody();
+            ids.forEach(
+                    eventID -> eventRepository.deleteByIdAndUserID(eventID, userID)
             );
-            return Boolean.TRUE;
+            return ResponseEntity.ok(Boolean.TRUE);
         }catch(Exception e){
-            logger.info("Error while deleting events associated with ids: {} and userID: {}", eventsDeleteRequest.getEventIDList(), eventsDeleteRequest.getUserID());
+            logger.info("Error while deleting events associated with one of the ids: {} and associated with user from header: {}", ids, authorizationHeader);
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public Boolean deleteAllEventsByRecordID(RecordEventsDeleteRequest deleteRequest){
+    public ResponseEntity<Boolean> deleteAllEventsByRecordID(Long recordID, String authorizationHeader){
         try{
-            eventRepository.deleteAllByRecordIDAndUserID(deleteRequest.getRecordID(), deleteRequest.getUserID());
-            return Boolean.TRUE;
+            var userID = authenticationInterface.getLoggedInUserId(authorizationHeader).getBody();
+            eventRepository.deleteAllByRecordIDAndUserID(recordID, userID);
+            return ResponseEntity.ok(Boolean.TRUE);
         }catch(Exception e){
-            logger.info("Error while deleting events associated with recordID: {} and userID: {}", deleteRequest.getRecordID(), deleteRequest.getUserID());
+            logger.info("Error while deleting events associated with recordID: {} and associated with user from header: {}", recordID, authorizationHeader);
             throw new RuntimeException(e);
         }
     }

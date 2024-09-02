@@ -10,8 +10,6 @@ import java.util.Optional;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
 
-    Optional<List<Event>> findAllByRecordID(Long recordID);
-
     /**
      * query for postgresql that retrieves all records from the Event(model name) table
      * WHERE the tile column contains or is the closest match to the term (prioritize best match)
@@ -24,8 +22,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
      * @return a list of the best possible matched records if available
      */
     @Query(value = "SELECT * FROM event " +
-            "WHERE (to_tsvector('english', title) @@ plainto_tsquery('english', :term) " +
-            "   OR to_tsvector('english', description) @@ plainto_tsquery('english', :term)) " +
+            "WHERE (to_tsvector('english', title) @@ to_tsquery('english', :term || ':*') " +
+            "   OR to_tsvector('english', description) @@ to_tsquery('english', :term || ':*') " +
+            "   OR title ILIKE '%' || :term || '%' " +
+            "   OR description ILIKE '%' || :term || '%') " +
             "AND userid = :userID " +
             "ORDER BY start_date", nativeQuery = true)
     Optional<List<Event>> searchEvents(@Param("term") String term, @Param("userID") Long userID);
@@ -36,4 +36,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     void deleteByIdAndUserID(Long eventID, Long userID);
 
     void deleteAllByRecordIDAndUserID(Long recordID, Long userID);
+
+    Optional<List<Event>> findAllByRecordIDAndUserID(Long recordID, Long userID);
 }

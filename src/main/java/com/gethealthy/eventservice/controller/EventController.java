@@ -3,6 +3,7 @@ package com.gethealthy.eventservice.controller;
 import com.gethealthy.eventservice.model.*;
 import com.gethealthy.eventservice.service.EventService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,48 +11,48 @@ import java.util.List;
 
 @RestController
 @CrossOrigin
-@RequestMapping("api/v1/event")
+@RequestMapping("api/v1/events")
 @RequiredArgsConstructor
 public class EventController {
     private final EventService eventService;
 
-    @PostMapping("/add")
-    public ResponseEntity<EventDTO> add(@RequestBody EventDTO eventDTO) {
-        return ResponseEntity.ok(eventService.addEvent(eventDTO));
+    @PostMapping("event/add")
+    public ResponseEntity<EventDTO> add(@RequestBody EventDTO eventDTO, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        return eventService.addEvent(eventDTO, authorizationHeader);
     }
 
-    @GetMapping("/events")
-    public ResponseEntity<List<EventDTO>> getEventsByRecordID(@RequestParam Long recordID) {
-        return ResponseEntity.ok(eventService.getEventsByRecordID(recordID));
+    @GetMapping("/record/get-all")
+    public ResponseEntity<List<EventDTO>> getEventsByRecordID(@RequestParam Long recordID, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        return eventService.getEventsByRecordID(recordID, authorizationHeader);
     }
 
     @PostMapping("/search")
-    public ResponseEntity<List<EventDTO>> searchEvents(@RequestBody SearchRequest searchRequest) {
-        return ResponseEntity.ok(eventService.searchEvents(searchRequest));
+    public ResponseEntity<List<EventDTO>> searchEvents(@RequestBody String term, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        return eventService.searchEvents(term, authorizationHeader);
     }
 
-    @GetMapping("/event/{id}")
-    public ResponseEntity<EventDTO> getEvent(@PathVariable Long id) {
-        return ResponseEntity.ok(eventService.getEvent(id));
+    @GetMapping("/event/get-with-id")
+    public ResponseEntity<EventDTO> getEvent(@RequestParam Long id, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        return eventService.getEvent(id, authorizationHeader);
     }
 
-    @PutMapping("update")
-    public ResponseEntity<EventDTO> updateEvent(@RequestBody EventDTO eventDTO) {
-        return ResponseEntity.ok(eventService.updateEvent(eventDTO));
+    @PutMapping("event/update")
+    public ResponseEntity<EventDTO> updateEvent(@RequestBody EventDTO eventDTO, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        return eventService.updateEvent(eventDTO, authorizationHeader);
     }
 
-    @DeleteMapping("/delete")
-    public ResponseEntity<Boolean> deleteEvent(@RequestBody DeleteRequest deleteRequest) {
-        return ResponseEntity.ok(eventService.deleteEvent(deleteRequest));
+    @DeleteMapping("event/delete")
+    public ResponseEntity<Boolean> deleteEvent(@RequestParam Long id, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        return eventService.deleteEvent(id, authorizationHeader);
     }
 
-    @DeleteMapping("/delete/all")
-    public ResponseEntity<Boolean> deleteAllEvents(@RequestBody EventsDeleteRequest eventsDeleteRequest) {
-        return ResponseEntity.ok(eventService.deleteAllEvent(eventsDeleteRequest));
+    @DeleteMapping("delete/all-with-ids")
+    public ResponseEntity<Boolean> deleteAllEvents(@RequestParam List<Long> ids, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        return eventService.deleteAllEvent(ids, authorizationHeader);
     }
 
-    @DeleteMapping("/delete/all/record")
-    public ResponseEntity<Boolean> deleteAllEventsByRecordID(@RequestBody RecordEventsDeleteRequest deleteRequest) {
-        return ResponseEntity.ok(eventService.deleteAllEventsByRecordID(deleteRequest));
+    @DeleteMapping("record/delete-all")
+    public ResponseEntity<Boolean> deleteAllEventsByRecordID(@RequestParam Long recordID, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        return eventService.deleteAllEventsByRecordID(recordID, authorizationHeader);
     }
 }

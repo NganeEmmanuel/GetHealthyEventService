@@ -15,7 +15,7 @@ public class EventMapperService implements MapperService<EventDTO, Event> {
                 .userID(event.getUserID())
                 .title(event.getTitle())
                 .description(event.getDescription())
-                .date(event.getDate())
+                .startDate(event.getStartDate())
                 .build();
     }
 
@@ -27,7 +27,7 @@ public class EventMapperService implements MapperService<EventDTO, Event> {
                 .userID(eventDTO.getUserID())
                 .title(eventDTO.getTitle())
                 .description(eventDTO.getDescription())
-                .date(eventDTO.getDate())
+                .startDate(eventDTO.getStartDate())
                 .build();
     }
 
@@ -35,6 +35,6 @@ public class EventMapperService implements MapperService<EventDTO, Event> {
     public void updateEntity(EventDTO eventDTO, Event event) {
         event.setTitle(eventDTO.getTitle());
         event.setDescription(eventDTO.getDescription());
-        event.setDate(eventDTO.getDate());
+        event.setStartDate(eventDTO.getStartDate());
     }
 }
