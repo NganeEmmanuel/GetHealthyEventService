@@ -27,7 +27,7 @@ public class EventController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<List<EventDTO>> searchEvents(@RequestBody String term, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+    public ResponseEntity<List<EventDTO>> searchEvents(@RequestParam String term, @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
         return eventService.searchEvents(term, authorizationHeader);
     }
 

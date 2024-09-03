@@ -74,7 +74,7 @@ public class EventServiceImpl implements EventService {
             return ResponseEntity.ok(eventDTOList);
         }catch (EventNotFoundException eventNotFoundException){
             logger.info("No event found matching term: {} and associated with user from header: {}", term, authorizationHeader);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(eventDTOList, HttpStatus.NOT_FOUND);
         }catch(Exception e){
             logger.info("Error while getting records matching term: {} and associated with user from header: {}", term, authorizationHeader);
             throw new RuntimeException(e);
@@ -108,6 +108,9 @@ public class EventServiceImpl implements EventService {
     public ResponseEntity<EventDTO> updateEvent(EventDTO eventDTO, String authorizationHeader) throws EventNotFoundException {
         try {
             var userID = authenticationInterface.getLoggedInUserId(authorizationHeader).getBody();
+
+            // Note user ID from DTO during update is set in the client from the user information in the catch
+            // this information in the cache is set when the user logs in(a request is ent to the auth service to get logged-in user
             if(!eventDTO.getUserID().equals(userID)) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             var event = eventRepository.findById(eventDTO.getId()).orElseThrow(
                     () -> new EventNotFoundException(eventDTO.getId())
