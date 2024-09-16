@@ -22,13 +22,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
      * @return a list of the best possible matched records if available
      */
     @Query(value = "SELECT * FROM event " +
-            "WHERE (to_tsvector('english', title) @@ to_tsquery('english', :term || ':*') " +
-            "   OR to_tsvector('english', description) @@ to_tsquery('english', :term || ':*') " +
+            "WHERE (to_tsvector('english', title) @@ to_tsquery('english', regexp_replace(:term, '\\s+', ' & ', 'g') || ':*') " +
+            "   OR to_tsvector('english', description) @@ to_tsquery('english', regexp_replace(:term, '\\s+', ' & ', 'g') || ':*') " +
             "   OR title ILIKE '%' || :term || '%' " +
             "   OR description ILIKE '%' || :term || '%') " +
             "AND userid = :userID " +
             "ORDER BY start_date", nativeQuery = true)
     Optional<List<Event>> searchEvents(@Param("term") String term, @Param("userID") Long userID);
+
 
 
     Optional<Event> findByIdAndUserID(Long eventId, Long userID);
